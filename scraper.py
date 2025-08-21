@@ -39,6 +39,8 @@ def scrape_emails():
 
 
 # START HERE
+seconds = 0
+
 seen_emails = set()  # Set to keep track of seen emails
 try:
     initial_url = "https://duckduckgo.com"  # Start URL
@@ -47,7 +49,7 @@ try:
 
     while True:
         current_url = driver.current_url
-        if current_url != last_url:
+        if current_url != last_url or seconds == 10:
             #print(f"Navigation detected. New URL: {current_url}")
             scrape_emails()
             last_url = current_url
@@ -55,7 +57,9 @@ try:
             counter = 0
             for item in seen_emails:
                 counter += 1
+            seconds = 0
             print(f"Total unique emails found: {counter}")
         time.sleep(1)
+        seconds += 1
 finally:
     driver.quit()
