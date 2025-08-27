@@ -1,5 +1,7 @@
 import re
 import time
+import os
+import json
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -16,8 +18,21 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760'}
 unwanted = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
 
-
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+SEEN_EMAILS_FILE = 'seen_emails.json'
+
+def load_seen_emails():
+    if os.path.exists(SEEN_EMAILS_FILE):
+        with open(SEEN_EMAILS_FILE, 'r') as f:
+            return set(json.load(f))
+    return set()
+
+def save_seen_emails():
+    with open(SEEN_EMAILS_FILE, 'w') as f:
+        json.dump(list(seen_emails), f, indent=2)
+
+seen_emails = load_seen_emails()
 
 def write_emails_to_file(emails, filename):
     with open(filename, 'a') as file:
@@ -28,6 +43,7 @@ def write_emails_to_file(emails, filename):
                     file.write(email + ' ')
                 else:
                     file.write(email + '\n')
+    save_seen_emails() 
 
 def write_phones_to_file(phones, filename):
     with open(filename, 'a') as file:
