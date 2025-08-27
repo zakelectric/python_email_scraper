@@ -13,6 +13,7 @@ chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
+acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760'}
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
@@ -36,8 +37,9 @@ def add_comma():
 
 def find_emails(html):
     emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', html)
-    filtered_emails = {email for email in emails if email.lower().endswith(('.com', '.net', '.org'))}
-    return set(filtered_emails)
+    filtered_emails = [email for email in emails if len(email) <= 45]
+    filtered_emails_0 = {email for email in emails if email.lower().endswith(('.com', '.net', '.org'))}
+    return set(filtered_emails_0)
 
 def find_phone_numbers(html):
     pattern = r'(\+?1[\s\-\.]?)?(\(?\d{3}\)?[\s\-\.]?)?\d{3}-\d{4}'
@@ -47,7 +49,8 @@ def find_phone_numbers(html):
         number = m.group(0)
         digits = re.sub(r'\D', '', number)
         if len(digits) == 10:
-            formatted_numbers.add(number.strip())
+            if digits[:3] in acceptable_area_codes:
+                formatted_numbers.add(number.strip())
     return formatted_numbers
 
 def scrape_emails(link, filename):
