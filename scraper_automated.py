@@ -17,6 +17,8 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 
 acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760', '951', '442', '213', '310', '323', '424', '562', '626', '661', '747', '657', '714'}
 unwanted = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
+email_added = 0
+email_skipped = 0
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
@@ -35,6 +37,8 @@ def save_seen_emails():
 seen_emails = load_seen_emails()
 
 def write_emails_to_file(emails, filename):
+    global email_added, email_skipped
+    
     with open(filename, 'a') as file:
         for i, email in enumerate(emails):
             if email not in seen_emails:
@@ -43,6 +47,10 @@ def write_emails_to_file(emails, filename):
                     file.write(email + ' ')
                 else:
                     file.write(email + '\n')
+                email_added += 1
+            else:
+                email_skipped += 1
+
     save_seen_emails() 
 
 def write_phones_to_file(phones, filename):
@@ -116,6 +124,7 @@ try:
     input()
 
     while True:
+        print(f"Emails added: {email_added} | Emails skipped: {email_skipped}")
         filtered_links = get_filtered_links()
         main_window = driver.current_window_handle
         
