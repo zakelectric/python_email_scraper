@@ -15,7 +15,7 @@ chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
-acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760'}
+acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760', '951', '442', '213', '310', '323', '424', '562', '626', '661', '747', '657', '714'}
 unwanted = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
