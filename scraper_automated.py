@@ -14,15 +14,20 @@ chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
 acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760'}
+unwanted = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
+
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 def write_emails_to_file(emails, filename):
     with open(filename, 'a') as file:
-        for email in emails:
+        for i, email in enumerate(emails):
             if email not in seen_emails:
                 seen_emails.add(email)
-                file.write(email + ' ')
+                if i == len(emails) - 1:
+                    file.write(email + ' ')
+                else:
+                    file.write(email + '\n')
 
 def write_phones_to_file(phones, filename):
     with open(filename, 'a') as file:
@@ -80,7 +85,6 @@ def get_filtered_links():
     pattern = r'http[s]?://[^\s"\'>]+?\.(com|net|org)\b'
     links = [m.group(0) for m in re.finditer(pattern, html)]
     # Filter out links containing unwanted domains
-    unwanted = ['duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
     filtered_links = {link for link in links if not any(domain in link for domain in unwanted)}
     return filtered_links
 
