@@ -17,6 +17,7 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 
 acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760', '951', '442', '213', '310', '323', '424', '562', '626', '661', '747', '657', '714'}
 unwanted = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
+unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
 
@@ -67,8 +68,9 @@ def add_comma():
 def find_emails(html):
     emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', html)
     filtered_emails = [email for email in emails if len(email) <= 45]
-    filtered_emails_0 = {email for email in emails if email.lower().endswith(('.com', '.net', '.org'))}
-    return set(filtered_emails_0)
+    filtered_emails_0 = {email for email in filtered_emails if email.lower().endswith(('.com', '.net', '.org'))}
+    filtered_emails_1 = {email for email in filtered_emails_0 if not any(unwanted in email.lower() for unwanted in unwanted_email)}
+    return set(filtered_emails_1)
 
 def find_phone_numbers(html):
     pattern = r'(\+?1[\s\-\.]?)?(\(?\d{3}\)?[\s\-\.]?)?\d{3}-\d{4}'
