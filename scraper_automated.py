@@ -16,7 +16,7 @@ chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
 acceptable_area_codes = {'619', '858', '714', '818', '800', '949', '760', '951', '442', '213', '310', '323', '424', '562', '626', '661', '747', '657', '714'}
-unwanted = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
+unwanted_links = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
 unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
@@ -25,20 +25,22 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 
 SEEN_EMAILS_FILE = 'seen_emails.json'
 
+# Load Emails from json file
 def load_seen_emails():
     if os.path.exists(SEEN_EMAILS_FILE):
         with open(SEEN_EMAILS_FILE, 'r') as f:
             return set(json.load(f))
     return set()
 
-def save_seen_emails():
+# Save Emails to json file
+def save_seen_emails(seen_emails):
     with open(SEEN_EMAILS_FILE, 'w') as f:
         json.dump(list(seen_emails), f, indent=2)
 
-seen_emails = load_seen_emails()
-
+# Write Emails to txt file
 def write_emails_to_file(emails, filename):
     global email_added, email_skipped
+    seen_emails = load_seen_emails()
     
     with open(filename, 'a') as file:
         for i, email in enumerate(emails):
@@ -52,8 +54,9 @@ def write_emails_to_file(emails, filename):
             else:
                 email_skipped += 1
 
-    save_seen_emails() 
+    save_seen_emails(seen_emails) 
 
+# Write phone numbers to text file
 def write_phones_to_file(phones, filename):
     with open(filename, 'a') as file:
         for phone in phones:
@@ -61,10 +64,12 @@ def write_phones_to_file(phones, filename):
                 seen_phones.add(phone)
                 file.write(phone + ' ')
 
+# Add a comma
 def add_comma():
     with open('results.txt', 'a') as file:
         file.write(', ')
 
+# Scan HTML for emails and return them as a set
 def find_emails(html):
     emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', html)
     filtered_emails = [email for email in emails if len(email) <= 45]
@@ -72,6 +77,7 @@ def find_emails(html):
     filtered_emails_1 = {email for email in filtered_emails_0 if not any(unwanted in email.lower() for unwanted in unwanted_email)}
     return set(filtered_emails_1)
 
+# Scan HTML for phone numbers and return them as a set
 def find_phone_numbers(html):
     pattern = r'(\+?1[\s\-\.]?)?(\(?\d{3}\)?[\s\-\.]?)?\d{3}-\d{4}'
     matches = re.finditer(pattern, html)
@@ -84,6 +90,7 @@ def find_phone_numbers(html):
                 formatted_numbers.add(number.strip())
     return formatted_numbers
 
+# Drives scraping activities
 def scrape_emails(link, filename):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     emails = find_emails(str(soup))
@@ -111,7 +118,7 @@ def get_filtered_links():
     pattern = r'http[s]?://[^\s"\'>]+?\.(com|net|org)\b'
     links = [m.group(0) for m in re.finditer(pattern, html)]
     # Filter out links containing unwanted domains
-    filtered_links = {link for link in links if not any(domain in link for domain in unwanted)}
+    filtered_links = {link for link in links if not any(domain in link for domain in unwanted_links)}
     return filtered_links
 
 # START HERE
@@ -137,6 +144,7 @@ try:
 
         for link in filtered_links:
             if link not in seen_filtered_links:
+
                 print(f"\nSEARCHING LINK: {link}")
                 driver.execute_script("window.open(arguments[0]);", link)
                 driver.switch_to.window(driver.window_handles[-1])
