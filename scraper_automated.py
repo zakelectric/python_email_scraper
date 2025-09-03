@@ -174,6 +174,16 @@ try:
                     driver.switch_to.window(main_window)
                     time.sleep(1)
 
+                if result == False:
+                    contact_link_0 = f"{link}/careers"
+                    driver.execute_script("window.open(arguments[0]);", contact_link_0)
+                    driver.switch_to.window(driver.window_handles[-1])
+                    time.sleep(5)
+                    result = scrape_emails(link, 'results.txt')
+                    driver.close()
+                    driver.switch_to.window(main_window)
+                    time.sleep(1)
+
                 
                 seen_filtered_links.add(link)
 
