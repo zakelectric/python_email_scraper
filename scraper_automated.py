@@ -146,7 +146,8 @@ try:
             if link not in seen_filtered_links:
 
                 print(f"\nSEARCHING LINK: {link}")
-                driver.execute_script("window.open(arguments[0]);", link)
+                modified_link = f"{link}/careers"
+                driver.execute_script("window.open(arguments[0]);", modified_link)
                 driver.switch_to.window(driver.window_handles[-1])
                 time.sleep(5)
                 result = scrape_emails(link, 'results.txt')
@@ -155,8 +156,8 @@ try:
                 time.sleep(1)
 
                 if result == False:
-                    contact_link = f"{link}/contact"
-                    driver.execute_script("window.open(arguments[0]);", contact_link)
+                    modified_link = f"{link}/career"
+                    driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
                     time.sleep(5)
                     result = scrape_emails(link, 'results.txt')
@@ -165,8 +166,8 @@ try:
                     time.sleep(1)
 
                 if result == False:
-                    contact_link_0 = f"{link}/contact-us"
-                    driver.execute_script("window.open(arguments[0]);", contact_link_0)
+                    modified_link = f"{link}/contact"
+                    driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
                     time.sleep(5)
                     result = scrape_emails(link, 'results.txt')
@@ -175,8 +176,17 @@ try:
                     time.sleep(1)
 
                 if result == False:
-                    contact_link_0 = f"{link}/careers"
-                    driver.execute_script("window.open(arguments[0]);", contact_link_0)
+                    modified_link = f"{link}/contact-us"
+                    driver.execute_script("window.open(arguments[0]);", modified_link)
+                    driver.switch_to.window(driver.window_handles[-1])
+                    time.sleep(5)
+                    result = scrape_emails(link, 'results.txt')
+                    driver.close()
+                    driver.switch_to.window(main_window)
+                    time.sleep(1)
+                
+                if result == False:
+                    driver.execute_script("window.open(arguments[0]);", link)
                     driver.switch_to.window(driver.window_handles[-1])
                     time.sleep(5)
                     result = scrape_emails(link, 'results.txt')
