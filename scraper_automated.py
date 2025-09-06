@@ -189,6 +189,26 @@ try:
                     driver.close()
                     driver.switch_to.window(main_window)
                     time.sleep(1)
+                
+                if result == False:
+                    modified_link = f"{link}/jobs"
+                    driver.execute_script("window.open(arguments[0]);", modified_link)
+                    driver.switch_to.window(driver.window_handles[-1])
+                    time.sleep(5)
+                    result = scrape_emails(link, 'results.txt')
+                    driver.close()
+                    driver.switch_to.window(main_window)
+                    time.sleep(1)
+                
+                if result == False:
+                    modified_link = f"{link}/job"
+                    driver.execute_script("window.open(arguments[0]);", modified_link)
+                    driver.switch_to.window(driver.window_handles[-1])
+                    time.sleep(5)
+                    result = scrape_emails(link, 'results.txt')
+                    driver.close()
+                    driver.switch_to.window(main_window)
+                    time.sleep(1)
 
                 if result == False:
                     modified_link = f"{link}/contact"
