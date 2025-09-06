@@ -20,6 +20,30 @@ unwanted_links = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 
 unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
+y = 0
+
+search_terms = {
+    0: 'Glendale+mortgage+broker',
+    1: 'Pasadena+mortgage+broker',
+    2: 'Burbank+mortgage+broker',
+    3: 'Santa+Monica+mortgage+broker',
+    4: 'Long+Beach+mortgage+broker',
+    5: 'West+Hollywood+mortgage+broker',
+    6: 'Beverly+Hills+mortgage+broker',
+    7: 'Culver+City+mortgage+broker',
+    8: 'Torrance+mortgage+broker',
+    9: 'Inglewood+mortgage+broker',
+    10: 'Downey+mortgage+broker',
+    11: 'El+Monte+mortgage+broker',
+    12: 'Whittier+mortgage+broker',
+    13: 'Pomona+mortgage+broker',
+    14: 'Lancaster+mortgage+broker',
+    15: 'Palmdale+mortgage+broker',
+    16: 'Norwalk+mortgage+broker',
+    17: 'Redondo+Beach+mortgage+broker',
+    18: 'Manhattan+Beach+mortgage+broker',
+    19: 'San+Fernando+mortgage+broker'
+}
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
@@ -127,10 +151,11 @@ seen_emails = set()  # Set to keep track of seen emails
 seen_phones = set()
 seen_filtered_links = set()
 try:
-    initial_url = "https://duckduckgo.com"  # Start URL
-    driver.get(initial_url)
-    print("\nIndicate once you have made your search query by pressing ENTER")
-    input()
+    link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
+    y += 1
+    driver.get(link)
+    # print("\nIndicate once you have made your search query by pressing ENTER")
+    # input()
 
     while True:
         print(f"Emails added: {email_added} | Emails skipped: {email_skipped}")
@@ -209,8 +234,9 @@ try:
             )
             more_results_button.click()
         except:
-            print("COULD NOT FIND MORE RESULTS BUTTON! - Press ENTER to continue...")
-            input()
+            print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON! - Press ENTER to continue...")
+            link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
+            y += 1
 
 finally:
     driver.quit()
