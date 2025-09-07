@@ -20,6 +20,7 @@ unwanted_links = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 
 unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
+skipped_links = 0
 y = 0
 
 search_terms = {
@@ -48,6 +49,7 @@ search_terms = {
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 SEEN_EMAILS_FILE = 'seen_emails.json'
+SEEN_LINKS_FILE = 'seen_links.json'
 
 # Load Emails from json file
 def load_seen_emails():
@@ -55,11 +57,29 @@ def load_seen_emails():
         with open(SEEN_EMAILS_FILE, 'r') as f:
             return set(json.load(f))
     return set()
-
 # Save Emails to json file
 def save_seen_emails(seen_emails):
     with open(SEEN_EMAILS_FILE, 'w') as f:
         json.dump(list(seen_emails), f, indent=2)
+
+# Load Links from json file
+def load_seen_links():
+    if os.path.exists(SEEN_LINKS_FILE):
+        with open(SEEN_LINKS_FILE, 'r') as f:
+            return set(json.load(f))
+    return set()
+# Save Links to json file
+def save_seen_links(seen_filtered_links):
+    with open(SEEN_LINKS_FILE, 'w') as f:
+        json.dump(list(seen_filtered_links), f, indent=2)
+
+def wait_for_page_load(driver, timeout=10):
+    try:
+        WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+    except Exception as e:
+        print("Page did not load in time:", e)
 
 # Write Emails to txt file
 def write_emails_to_file(emails, filename):
@@ -146,16 +166,15 @@ def get_filtered_links():
     return filtered_links
 
 # START HERE
-seconds = 0
-seen_emails = set()  # Set to keep track of seen emails
+seen_emails = set()
 seen_phones = set()
 seen_filtered_links = set()
+
 try:
     link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
     y += 1
     driver.get(link)
-    # print("\nIndicate once you have made your search query by pressing ENTER")
-    # input()
+    seen_filtered_links = load_seen_links()
 
     while True:
         print(f"Emails added: {email_added} | Emails skipped: {email_skipped}")
@@ -174,52 +193,46 @@ try:
                 modified_link = f"{link}/careers"
                 driver.execute_script("window.open(arguments[0]);", modified_link)
                 driver.switch_to.window(driver.window_handles[-1])
-                time.sleep(5)
+                wait_for_page_load(driver) 
                 result = scrape_emails(link, 'results.txt')
                 driver.close()
                 driver.switch_to.window(main_window)
-                time.sleep(1)
 
                 if result == False:
                     modified_link = f"{link}/career"
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    time.sleep(5)
+                    wait_for_page_load(driver) 
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
-                    time.sleep(1)
 
                 if result == False:
                     modified_link = f"{link}/contact"
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    time.sleep(5)
+                    wait_for_page_load(driver) 
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
-                    time.sleep(1)
 
                 if result == False:
                     modified_link = f"{link}/contact-us"
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    time.sleep(5)
+                    wait_for_page_load(driver) 
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
-                    time.sleep(1)
                 
                 if result == False:
                     driver.execute_script("window.open(arguments[0]);", link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    time.sleep(5)
+                    wait_for_page_load(driver) 
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
-                    time.sleep(1)
 
-                
                 seen_filtered_links.add(link)
 
                 # Avoid adding websites without email or phone
@@ -228,6 +241,9 @@ try:
 
                 with open('results.txt', 'a') as file:
                     file.write(link + '\n')
+        
+        save_seen_links(seen_filtered_links)
+
         try:
             more_results_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "more-results"))
