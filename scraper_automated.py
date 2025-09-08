@@ -66,6 +66,17 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 SEEN_EMAILS_FILE = 'seen_emails.json'
 SEEN_LINKS_FILE = 'seen_links.json'
 
+def assure_proper_close():
+    print(f"Skipping {modified_link} due to load failure.")
+    try:
+        driver.close()
+    except Exception as e:
+        print(f"Window already closed or error closing: {e}")
+    try:
+        driver.switch_to.window(main_window)
+    except Exception as e:
+        print(f"Error switching to main window: {e}")
+
 # Load Emails from json file
 def load_seen_emails():
     if os.path.exists(SEEN_EMAILS_FILE):
@@ -202,7 +213,7 @@ try:
             while os.path.exists('pause.flag'):
                 time.sleep(5)
             print("Resuming...")
-            
+
         print("\n----------------------------------------------------------------------------------------")
         print(f"Emails added: {email_added} | Emails skipped: {email_skipped} | Search term: {search_terms[y]}")
         print("----------------------------------------------------------------------------------------")
@@ -222,9 +233,7 @@ try:
                 driver.execute_script("window.open(arguments[0]);", modified_link)
                 driver.switch_to.window(driver.window_handles[-1])
                 if not wait_for_page_load(driver):
-                    print(f"Skipping {modified_link} due to load failure.")
-                    driver.close()
-                    driver.switch_to.window(main_window)
+                    assure_proper_close()
                     continue
                 result = scrape_emails(link, 'results.txt')
                 driver.close()
@@ -235,9 +244,7 @@ try:
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
                     if not wait_for_page_load(driver):
-                        print(f"Skipping {modified_link} due to load failure.")
-                        driver.close()
-                        driver.switch_to.window(main_window)
+                        assure_proper_close()
                         continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
@@ -248,9 +255,7 @@ try:
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
                     if not wait_for_page_load(driver):
-                        print(f"Skipping {modified_link} due to load failure.")
-                        driver.close()
-                        driver.switch_to.window(main_window)
+                        assure_proper_close()
                         continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
@@ -261,9 +266,7 @@ try:
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
                     if not wait_for_page_load(driver):
-                        print(f"Skipping {modified_link} due to load failure.")
-                        driver.close()
-                        driver.switch_to.window(main_window)
+                        assure_proper_close()
                         continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
@@ -273,9 +276,7 @@ try:
                     driver.execute_script("window.open(arguments[0]);", link)
                     driver.switch_to.window(driver.window_handles[-1])
                     if not wait_for_page_load(driver):
-                        print(f"Skipping {modified_link} due to load failure.")
-                        driver.close()
-                        driver.switch_to.window(main_window)
+                        assure_proper_close()
                         continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
