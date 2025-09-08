@@ -21,30 +21,45 @@ unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
 skipped_links = 0
-y = 0
+y = 15
 
 search_terms = {
-    0: 'Glendale+mortgage+broker',
-    1: 'Pasadena+mortgage+broker',
-    2: 'Burbank+mortgage+broker',
-    3: 'Santa+Monica+mortgage+broker',
-    4: 'Long+Beach+mortgage+broker',
-    5: 'West+Hollywood+mortgage+broker',
-    6: 'Beverly+Hills+mortgage+broker',
-    7: 'Culver+City+mortgage+broker',
-    8: 'Torrance+mortgage+broker',
-    9: 'Inglewood+mortgage+broker',
-    10: 'Downey+mortgage+broker',
-    11: 'El+Monte+mortgage+broker',
-    12: 'Whittier+mortgage+broker',
-    13: 'Pomona+mortgage+broker',
-    14: 'Lancaster+mortgage+broker',
-    15: 'Palmdale+mortgage+broker',
-    16: 'Norwalk+mortgage+broker',
-    17: 'Redondo+Beach+mortgage+broker',
-    18: 'Manhattan+Beach+mortgage+broker',
-    19: 'San+Fernando+mortgage+broker'
-}
+        0: 'data+programming+consulting+firm+san+francisco+-indeed+-linkedin+-glassdoor',
+        1: 'data+programming+consulting+firm+oakland+-indeed+-linkedin+-glassdoor',
+        2: 'data+programming+consulting+firm+san+jose+-indeed+-linkedin+-glassdoor',
+        3: 'data+programming+consulting+firm+sacramento+-indeed+-linkedin+-glassdoor',
+        4: 'data+programming+consulting+firm+berkeley+-indeed+-linkedin+-glassdoor',
+        5: 'data+programming+consulting+firm+fremont+-indeed+-linkedin+-glassdoor',
+        6: 'data+programming+consulting+firm+stockton+-indeed+-linkedin+-glassdoor',
+        7: 'data+programming+consulting+firm+modesto+-indeed+-linkedin+-glassdoor',
+        8: 'data+programming+consulting+firm+santa+rosa+-indeed+-linkedin+-glassdoor',
+        9: 'data+programming+consulting+firm+hayward+-indeed+-linkedin+-glassdoor',
+        10: 'data+programming+consulting+firm+sunnyvale+-indeed+-linkedin+-glassdoor',
+        11: 'data+programming+consulting+firm+concord+-indeed+-linkedin+-glassdoor',
+        12: 'data+programming+consulting+firm+vallejo+-indeed+-linkedin+-glassdoor',
+        13: 'data+programming+consulting+firm+fairfield+-indeed+-linkedin+-glassdoor',
+        14: 'data+programming+consulting+firm+richmond+-indeed+-linkedin+-glassdoor',
+        15: 'data+programming+consulting+firm+antioch+-indeed+-linkedin+-glassdoor',
+        16: 'data+programming+consulting+firm+san+mateo+-indeed+-linkedin+-glassdoor',
+        17: 'data+programming+consulting+firm+daly+city+-indeed+-linkedin+-glassdoor',
+        18: 'data+programming+consulting+firm+san+leandro+-indeed+-linkedin+-glassdoor',
+        19: 'data+programming+consulting+firm+livermore+-indeed+-linkedin+-glassdoor',
+        20: 'data+programming+consulting+firm+tracy+-indeed+-linkedin+-glassdoor',
+        21: 'data+programming+consulting+firm+davis+-indeed+-linkedin+-glassdoor',
+        22: 'data+programming+consulting+firm+napa+-indeed+-linkedin+-glassdoor',
+        23: 'data+programming+consulting+firm+petaluma+-indeed+-linkedin+-glassdoor',
+        24: 'data+programming+consulting+firm+redding+-indeed+-linkedin+-glassdoor',
+        25: 'data+programming+consulting+firm+chico+-indeed+-linkedin+-glassdoor',
+        26: 'data+programming+consulting+firm+yuba+city+-indeed+-linkedin+-glassdoor',
+        27: 'data+programming+consulting+firm+elk+grove+-indeed+-linkedin+-glassdoor',
+        28: 'data+programming+consulting+firm+roseville+-indeed+-linkedin+-glassdoor',
+        29: 'data+programming+consulting+firm+rocklin+-indeed+-linkedin+-glassdoor',
+        30: 'data+programming+consulting+firm+woodland+-indeed+-linkedin+-glassdoor',
+        31: 'data+programming+consulting+firm+manteca+-indeed+-linkedin+-glassdoor',
+        32: 'data+programming+consulting+firm+lodi+-indeed+-linkedin+-glassdoor',
+        33: 'data+programming+consulting+firm+suisun+city+-indeed+-linkedin+-glassdoor',
+        34: 'data+programming+consulting+firm+vacaville+-indeed+-linkedin+-glassdoor',
+    }
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
@@ -78,8 +93,13 @@ def wait_for_page_load(driver, timeout=10):
         WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
+        # Additional check: If page source is suspiciously short, treat as failed
+        if len(driver.page_source) < 500:
+            raise Exception("Page source too short, likely failed to load.")
     except Exception as e:
-        print("Page did not load in time:", e)
+        print("Page did not load in time or failed:", e)
+        return False
+    return True
 
 # Write Emails to txt file
 def write_emails_to_file(emails, filename):
@@ -171,13 +191,21 @@ seen_phones = set()
 seen_filtered_links = set()
 
 try:
-    link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
+    search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
     y += 1
-    driver.get(link)
+    driver.get(search_link)
     seen_filtered_links = load_seen_links()
 
     while True:
-        print(f"Emails added: {email_added} | Emails skipped: {email_skipped}")
+        if os.path.exists('pause.flag'):
+            print("Paused... Type 'rm pause.flag' in another terminal to resume.")
+            while os.path.exists('pause.flag'):
+                time.sleep(5)
+            print("Resuming...")
+            
+        print("\n----------------------------------------------------------------------------------------")
+        print(f"Emails added: {email_added} | Emails skipped: {email_skipped} | Search term: {search_terms[y]}")
+        print("----------------------------------------------------------------------------------------")
         filtered_links = get_filtered_links()
         main_window = driver.current_window_handle
         
@@ -193,7 +221,11 @@ try:
                 modified_link = f"{link}/careers"
                 driver.execute_script("window.open(arguments[0]);", modified_link)
                 driver.switch_to.window(driver.window_handles[-1])
-                wait_for_page_load(driver) 
+                if not wait_for_page_load(driver):
+                    print(f"Skipping {modified_link} due to load failure.")
+                    driver.close()
+                    driver.switch_to.window(main_window)
+                    continue
                 result = scrape_emails(link, 'results.txt')
                 driver.close()
                 driver.switch_to.window(main_window)
@@ -202,7 +234,11 @@ try:
                     modified_link = f"{link}/career"
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    wait_for_page_load(driver) 
+                    if not wait_for_page_load(driver):
+                        print(f"Skipping {modified_link} due to load failure.")
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                        continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
@@ -211,7 +247,11 @@ try:
                     modified_link = f"{link}/contact"
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    wait_for_page_load(driver) 
+                    if not wait_for_page_load(driver):
+                        print(f"Skipping {modified_link} due to load failure.")
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                        continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
@@ -220,7 +260,11 @@ try:
                     modified_link = f"{link}/contact-us"
                     driver.execute_script("window.open(arguments[0]);", modified_link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    wait_for_page_load(driver) 
+                    if not wait_for_page_load(driver):
+                        print(f"Skipping {modified_link} due to load failure.")
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                        continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
@@ -228,7 +272,11 @@ try:
                 if result == False:
                     driver.execute_script("window.open(arguments[0]);", link)
                     driver.switch_to.window(driver.window_handles[-1])
-                    wait_for_page_load(driver) 
+                    if not wait_for_page_load(driver):
+                        print(f"Skipping {modified_link} due to load failure.")
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                        continue
                     result = scrape_emails(link, 'results.txt')
                     driver.close()
                     driver.switch_to.window(main_window)
@@ -250,8 +298,9 @@ try:
             )
             more_results_button.click()
         except:
-            print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON! - Press ENTER to continue...")
-            link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
+            print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON!")
+            search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
+            driver.get(search_link)
             y += 1
 
 finally:
