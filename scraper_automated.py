@@ -21,7 +21,7 @@ unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
 skipped_links = 0
-y = 15
+y = 28 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
 
 search_terms = {
         0: 'data+programming+consulting+firm+san+francisco+-indeed+-linkedin+-glassdoor',
@@ -62,6 +62,7 @@ search_terms = {
     }
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+driver.set_page_load_timeout(15)
 
 SEEN_EMAILS_FILE = 'seen_emails.json'
 SEEN_LINKS_FILE = 'seen_links.json'
@@ -228,59 +229,84 @@ try:
         for link in filtered_links:
             if link not in seen_filtered_links:
 
-                print(f"\nSEARCHING LINK: {link}")
                 modified_link = f"{link}/careers"
-                driver.execute_script("window.open(arguments[0]);", modified_link)
-                driver.switch_to.window(driver.window_handles[-1])
-                if not wait_for_page_load(driver):
+                print(f"\nSEARCHING LINK: {modified_link}")
+                try:
+                    driver.execute_script("window.open(arguments[0]);", modified_link)
+                    driver.switch_to.window(driver.window_handles[-1])
+                    if not wait_for_page_load(driver):
+                        assure_proper_close()
+                        continue
+                    result = scrape_emails(link, 'results.txt')
+                    driver.close()
+                    driver.switch_to.window(main_window)
+                except Exception as e:
+                    print(f"Error during tab open/scrape: {e}")
                     assure_proper_close()
                     continue
-                result = scrape_emails(link, 'results.txt')
-                driver.close()
-                driver.switch_to.window(main_window)
 
                 if result == False:
                     modified_link = f"{link}/career"
-                    driver.execute_script("window.open(arguments[0]);", modified_link)
-                    driver.switch_to.window(driver.window_handles[-1])
-                    if not wait_for_page_load(driver):
+                    print(f"\nSEARCHING LINK: {modified_link}")
+                    try:
+                        driver.execute_script("window.open(arguments[0]);", modified_link)
+                        driver.switch_to.window(driver.window_handles[-1])
+                        if not wait_for_page_load(driver):
+                            assure_proper_close()
+                            continue
+                        result = scrape_emails(link, 'results.txt')
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                    except Exception as e:
+                        print(f"Error during tab open/scrape: {e}")
                         assure_proper_close()
-                        continue
-                    result = scrape_emails(link, 'results.txt')
-                    driver.close()
-                    driver.switch_to.window(main_window)
 
                 if result == False:
                     modified_link = f"{link}/contact"
-                    driver.execute_script("window.open(arguments[0]);", modified_link)
-                    driver.switch_to.window(driver.window_handles[-1])
-                    if not wait_for_page_load(driver):
+                    print(f"\nSEARCHING LINK: {modified_link}")
+                    try:
+                        driver.execute_script("window.open(arguments[0]);", modified_link)
+                        driver.switch_to.window(driver.window_handles[-1])
+                        if not wait_for_page_load(driver):
+                            assure_proper_close()
+                            continue
+                        result = scrape_emails(link, 'results.txt')
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                    except Exception as e:
+                        print(f"Error during tab open/scrape: {e}")
                         assure_proper_close()
-                        continue
-                    result = scrape_emails(link, 'results.txt')
-                    driver.close()
-                    driver.switch_to.window(main_window)
 
                 if result == False:
                     modified_link = f"{link}/contact-us"
-                    driver.execute_script("window.open(arguments[0]);", modified_link)
-                    driver.switch_to.window(driver.window_handles[-1])
-                    if not wait_for_page_load(driver):
+                    print(f"\nSEARCHING LINK: {modified_link}")
+                    try:
+                        driver.execute_script("window.open(arguments[0]);", modified_link)
+                        driver.switch_to.window(driver.window_handles[-1])
+                        if not wait_for_page_load(driver):
+                            assure_proper_close()
+                            continue
+                        result = scrape_emails(link, 'results.txt')
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                    except Exception as e:
+                        print(f"Error during tab open/scrape: {e}")
                         assure_proper_close()
-                        continue
-                    result = scrape_emails(link, 'results.txt')
-                    driver.close()
-                    driver.switch_to.window(main_window)
                 
                 if result == False:
-                    driver.execute_script("window.open(arguments[0]);", link)
-                    driver.switch_to.window(driver.window_handles[-1])
-                    if not wait_for_page_load(driver):
+                    print(f"\nSEARCHING LINK: {link}")
+                    try:
+                        driver.execute_script("window.open(arguments[0]);", link)
+                        driver.switch_to.window(driver.window_handles[-1])
+                        if not wait_for_page_load(driver):
+                            assure_proper_close()
+                            continue
+                        result = scrape_emails(link, 'results.txt')
+                        driver.close()
+                        driver.switch_to.window(main_window)
+                    except Exception as e:
+                        print(f"Error during tab open/scrape: {e}")
                         assure_proper_close()
-                        continue
-                    result = scrape_emails(link, 'results.txt')
-                    driver.close()
-                    driver.switch_to.window(main_window)
 
                 seen_filtered_links.add(link)
 
