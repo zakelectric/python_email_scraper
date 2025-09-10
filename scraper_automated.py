@@ -68,34 +68,38 @@ driver.set_page_load_timeout(15)
 SEEN_EMAILS_FILE = 'seen_emails.json'
 SEEN_LINKS_FILE = 'seen_links.json'
 
-def run_driver(link):
+def assure_proper_close():
+    print(f"Skipping {modified_link} due to load failure.")
+    try:
+        if len(driver.window_handles) > 1:
+            driver.close()
+            driver.switch_to.window(driver.window_handles[0])
+        else:
+            print("No extra windows to close. Resetting driver.")
+            driver.quit()
+    except Exception as e:
+        print(f"Error during window close/switch: {e}")
 
+def run_driver(link):
     print(f"\nSEARCHING LINK: {link}")
     try:
         driver.execute_script("window.open(arguments[0]);", link)
         driver.switch_to.window(driver.window_handles[-1])
-        if not wait_for_page_load(driver):
-            assure_proper_close()
-            return None
+        # Timeout for page load
+        start_time = time.time()
+        while not wait_for_page_load(driver):
+            if time.time() - start_time > 30:  # 30 seconds max per link
+                print("Timeout exceeded for this link.")
+                break
+            time.sleep(2)
         result = scrape_emails(link, 'results.txt')
         driver.close()
-        driver.switch_to.window(main_window)
+        driver.switch_to.window(driver.window_handles[0])
         return result
     except Exception as e:
         print(f"Error during tab open/scrape: {e}")
         assure_proper_close()
         return None
-
-def assure_proper_close():
-    print(f"Skipping {modified_link} due to load failure.")
-    try:
-        driver.close()
-    except Exception as e:
-        print(f"Window already closed or error closing: {e}")
-    try:
-        driver.switch_to.window(main_window)
-    except Exception as e:
-        print(f"Error switching to main window: {e}")
 
 # Load Emails from json file
 def load_seen_emails():
