@@ -23,45 +23,30 @@ unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
 skipped_links = 0
-y = 28 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
+y = 0 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
 
 search_terms = {
-        0: 'data+programming+consulting+firm+san+francisco+-indeed+-linkedin+-glassdoor',
-        1: 'data+programming+consulting+firm+oakland+-indeed+-linkedin+-glassdoor',
-        2: 'data+programming+consulting+firm+san+jose+-indeed+-linkedin+-glassdoor',
-        3: 'data+programming+consulting+firm+sacramento+-indeed+-linkedin+-glassdoor',
-        4: 'data+programming+consulting+firm+berkeley+-indeed+-linkedin+-glassdoor',
-        5: 'data+programming+consulting+firm+fremont+-indeed+-linkedin+-glassdoor',
-        6: 'data+programming+consulting+firm+stockton+-indeed+-linkedin+-glassdoor',
-        7: 'data+programming+consulting+firm+modesto+-indeed+-linkedin+-glassdoor',
-        8: 'data+programming+consulting+firm+santa+rosa+-indeed+-linkedin+-glassdoor',
-        9: 'data+programming+consulting+firm+hayward+-indeed+-linkedin+-glassdoor',
-        10: 'data+programming+consulting+firm+sunnyvale+-indeed+-linkedin+-glassdoor',
-        11: 'data+programming+consulting+firm+concord+-indeed+-linkedin+-glassdoor',
-        12: 'data+programming+consulting+firm+vallejo+-indeed+-linkedin+-glassdoor',
-        13: 'data+programming+consulting+firm+fairfield+-indeed+-linkedin+-glassdoor',
-        14: 'data+programming+consulting+firm+richmond+-indeed+-linkedin+-glassdoor',
-        15: 'data+programming+consulting+firm+antioch+-indeed+-linkedin+-glassdoor',
-        16: 'data+programming+consulting+firm+san+mateo+-indeed+-linkedin+-glassdoor',
-        17: 'data+programming+consulting+firm+daly+city+-indeed+-linkedin+-glassdoor',
-        18: 'data+programming+consulting+firm+san+leandro+-indeed+-linkedin+-glassdoor',
-        19: 'data+programming+consulting+firm+livermore+-indeed+-linkedin+-glassdoor',
-        20: 'data+programming+consulting+firm+tracy+-indeed+-linkedin+-glassdoor',
-        21: 'data+programming+consulting+firm+davis+-indeed+-linkedin+-glassdoor',
-        22: 'data+programming+consulting+firm+napa+-indeed+-linkedin+-glassdoor',
-        23: 'data+programming+consulting+firm+petaluma+-indeed+-linkedin+-glassdoor',
-        24: 'data+programming+consulting+firm+redding+-indeed+-linkedin+-glassdoor',
-        25: 'data+programming+consulting+firm+chico+-indeed+-linkedin+-glassdoor',
-        26: 'data+programming+consulting+firm+yuba+city+-indeed+-linkedin+-glassdoor',
-        27: 'data+programming+consulting+firm+elk+grove+-indeed+-linkedin+-glassdoor',
-        28: 'data+programming+consulting+firm+roseville+-indeed+-linkedin+-glassdoor',
-        29: 'data+programming+consulting+firm+rocklin+-indeed+-linkedin+-glassdoor',
-        30: 'data+programming+consulting+firm+woodland+-indeed+-linkedin+-glassdoor',
-        31: 'data+programming+consulting+firm+manteca+-indeed+-linkedin+-glassdoor',
-        32: 'data+programming+consulting+firm+lodi+-indeed+-linkedin+-glassdoor',
-        33: 'data+programming+consulting+firm+suisun+city+-indeed+-linkedin+-glassdoor',
-        34: 'data+programming+consulting+firm+vacaville+-indeed+-linkedin+-glassdoor',
-    }
+    0: 'data+programming+consulting+firm+las+vegas+-indeed+-linkedin+-glassdoor',
+    1: 'data+programming+consulting+firm+reno+-indeed+-linkedin+-glassdoor',
+    2: 'data+programming+consulting+firm+henderson+-indeed+-linkedin+-glassdoor',
+    3: 'data+programming+consulting+firm+sparks+-indeed+-linkedin+-glassdoor',
+    4: 'data+programming+consulting+firm+carson+city+-indeed+-linkedin+-glassdoor',
+    5: 'data+programming+consulting+firm+elko+-indeed+-linkedin+-glassdoor',
+    6: 'data+programming+consulting+firm+mesquite+-indeed+-linkedin+-glassdoor',
+    7: 'data+programming+consulting+firm+boulder+city+-indeed+-linkedin+-glassdoor',
+    8: 'data+programming+consulting+firm+fallon+-indeed+-linkedin+-glassdoor',
+    9: 'data+programming+consulting+firm+fernley+-indeed+-linkedin+-glassdoor',
+    10: 'data+programming+consulting+firm+winnemucca+-indeed+-linkedin+-glassdoor',
+    11: 'data+programming+consulting+firm+ely+-indeed+-linkedin+-glassdoor',
+    12: 'data+programming+consulting+firm+lovelock+-indeed+-linkedin+-glassdoor',
+    13: 'data+programming+consulting+firm+yerington+-indeed+-linkedin+-glassdoor',
+    14: 'data+programming+consulting+firm+caliente+-indeed+-linkedin+-glassdoor',
+    15: 'data+programming+consulting+firm+west+wendover+-indeed+-linkedin+-glassdoor',
+    16: 'data+programming+consulting+firm+eureka+-indeed+-linkedin+-glassdoor',
+    17: 'data+programming+consulting+firm+gabbs+-indeed+-linkedin+-glassdoor',
+    18: 'data+programming+consulting+firm+silver+springs+-indeed+-linkedin+-glassdoor',
+    19: 'data+programming+consulting+firm+dayton+-indeed+-'
+}
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 driver.set_page_load_timeout(15)
@@ -315,6 +300,7 @@ try:
             more_results_button.click()
         except:
             print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON!")
+            signal.alarm(0)
             search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
             driver.get(search_link)
             y += 1
