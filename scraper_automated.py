@@ -23,7 +23,7 @@ unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
 skipped_links = 0
-y = 0 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
+y = 2 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
 
 search_terms = {
     0: 'data+programming+consulting+firm+las+vegas+-indeed+-linkedin+-glassdoor',
@@ -231,6 +231,7 @@ try:
     seen_filtered_links = load_seen_links()
 
     while True:
+        signal.alarm(0) 
         if os.path.exists('pause.flag'):
             print("Paused... Type 'rm pause.flag' in another terminal to resume.")
             while os.path.exists('pause.flag'):
