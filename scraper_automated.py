@@ -67,6 +67,24 @@ driver.set_page_load_timeout(15)
 SEEN_EMAILS_FILE = 'seen_emails.json'
 SEEN_LINKS_FILE = 'seen_links.json'
 
+def run_driver(link):
+
+    print(f"\nSEARCHING LINK: {link}")
+    try:
+        driver.execute_script("window.open(arguments[0]);", link)
+        driver.switch_to.window(driver.window_handles[-1])
+        if not wait_for_page_load(driver):
+            assure_proper_close()
+            return None
+        result = scrape_emails(link, 'results.txt')
+        driver.close()
+        driver.switch_to.window(main_window)
+        return result
+    except Exception as e:
+        print(f"Error during tab open/scrape: {e}")
+        assure_proper_close()
+        return None
+
 def assure_proper_close():
     print(f"Skipping {modified_link} due to load failure.")
     try:
@@ -187,6 +205,7 @@ def scrape_emails(link, filename):
         print("No phone numbers found:")
         write_phones_to_file('###-###-####', 'results.txt')
         add_comma()
+    return True
 
 def get_filtered_links():
     soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -230,88 +249,40 @@ try:
             if link not in seen_filtered_links:
 
                 modified_link = f"{link}/careers"
-                print(f"\nSEARCHING LINK: {modified_link}")
-                try:
-                    driver.execute_script("window.open(arguments[0]);", modified_link)
-                    driver.switch_to.window(driver.window_handles[-1])
-                    if not wait_for_page_load(driver):
-                        assure_proper_close()
-                        continue
-                    result = scrape_emails(link, 'results.txt')
-                    driver.close()
-                    driver.switch_to.window(main_window)
-                except Exception as e:
-                    print(f"Error during tab open/scrape: {e}")
-                    assure_proper_close()
+                result = run_driver(modified_link)
+                if result == True:
+                    seen_filtered_links.add(link)
                     continue
 
-                if result == False:
-                    modified_link = f"{link}/career"
-                    print(f"\nSEARCHING LINK: {modified_link}")
-                    try:
-                        driver.execute_script("window.open(arguments[0]);", modified_link)
-                        driver.switch_to.window(driver.window_handles[-1])
-                        if not wait_for_page_load(driver):
-                            assure_proper_close()
-                            continue
-                        result = scrape_emails(link, 'results.txt')
-                        driver.close()
-                        driver.switch_to.window(main_window)
-                    except Exception as e:
-                        print(f"Error during tab open/scrape: {e}")
-                        assure_proper_close()
+                modified_link = f"{link}/career"
+                result = run_driver(modified_link)
+                if result == True:
+                    seen_filtered_links.add(link)
+                    continue
 
-                if result == False:
-                    modified_link = f"{link}/contact"
-                    print(f"\nSEARCHING LINK: {modified_link}")
-                    try:
-                        driver.execute_script("window.open(arguments[0]);", modified_link)
-                        driver.switch_to.window(driver.window_handles[-1])
-                        if not wait_for_page_load(driver):
-                            assure_proper_close()
-                            continue
-                        result = scrape_emails(link, 'results.txt')
-                        driver.close()
-                        driver.switch_to.window(main_window)
-                    except Exception as e:
-                        print(f"Error during tab open/scrape: {e}")
-                        assure_proper_close()
 
-                if result == False:
-                    modified_link = f"{link}/contact-us"
-                    print(f"\nSEARCHING LINK: {modified_link}")
-                    try:
-                        driver.execute_script("window.open(arguments[0]);", modified_link)
-                        driver.switch_to.window(driver.window_handles[-1])
-                        if not wait_for_page_load(driver):
-                            assure_proper_close()
-                            continue
-                        result = scrape_emails(link, 'results.txt')
-                        driver.close()
-                        driver.switch_to.window(main_window)
-                    except Exception as e:
-                        print(f"Error during tab open/scrape: {e}")
-                        assure_proper_close()
-                
-                if result == False:
-                    print(f"\nSEARCHING LINK: {link}")
-                    try:
-                        driver.execute_script("window.open(arguments[0]);", link)
-                        driver.switch_to.window(driver.window_handles[-1])
-                        if not wait_for_page_load(driver):
-                            assure_proper_close()
-                            continue
-                        result = scrape_emails(link, 'results.txt')
-                        driver.close()
-                        driver.switch_to.window(main_window)
-                    except Exception as e:
-                        print(f"Error during tab open/scrape: {e}")
-                        assure_proper_close()
+                modified_link = f"{link}/contact"
+                result = run_driver(modified_link)
+                if result == True:
+                    seen_filtered_links.add(link)
+                    continue
+            
+                modified_link = f"{link}/contact-us"
+                result = run_driver(modified_link)
+                if result == True:
+                    seen_filtered_links.add(link)
+                    continue
+
+                modified_link = link
+                result = run_driver(modified_link)
+                if result == True:
+                    seen_filtered_links.add(link)
+                    continue
 
                 seen_filtered_links.add(link)
 
                 # Avoid adding websites without email or phone
-                if result == False:
+                if result is None:
                     continue
 
                 with open('results.txt', 'a') as file:
