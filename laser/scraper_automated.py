@@ -23,7 +23,7 @@ unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
 skipped_links = 0
-y = 0 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
+y = 1 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
 
 search_terms = {
     0: 'laser+rejuvenation+spa+los+angeles',
@@ -265,19 +265,6 @@ try:
         for link in filtered_links:
             if link not in seen_filtered_links:
 
-                modified_link = f"{link}/careers"
-                result = run_driver(modified_link)
-                if result == True:
-                    seen_filtered_links.add(link)
-                    continue
-
-                modified_link = f"{link}/career"
-                result = run_driver(modified_link)
-                if result == True:
-                    seen_filtered_links.add(link)
-                    continue
-
-
                 modified_link = f"{link}/contact"
                 result = run_driver(modified_link)
                 if result == True:
@@ -316,7 +303,14 @@ try:
             print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON!")
             signal.alarm(0)
             search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
-            driver.get(search_link)
+            try:
+                driver.get(search_link)
+            except:
+                print("Driver failed. Restarting...")
+                driver.quit()
+                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+                driver.set_page_load_timeout(15)
+                driver.get(search_link)
             y += 1
 
 finally:
