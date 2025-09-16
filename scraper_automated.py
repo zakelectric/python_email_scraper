@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import signal
+import pandas as pd
 
 chrome_options = webdriver.ChromeOptions()
 #chrome_options.add_argument('--headless')
@@ -27,37 +27,36 @@ y = 1 # Make sure to update this to 0 if starting from scratch. Used as Index of
 
 
 search_terms = {
-    0: 'christian+church+san+diego+county',
-    1: 'christian+church+san+diego',
-    2: 'christian+church+chula+vista',
-    3: 'christian+church+oceanside',
-    4: 'christian+church+escondido',
-    5: 'christian+church+carlsbad',
-    6: 'christian+church+el+cajon',
-    7: 'christian+church+vista',
-    8: 'christian+church+san+marcos',
-    9: 'christian+church+encinitas',
-    10: 'christian+church+national+city',
-    11: 'christian+church+la+mesa',
-    12: 'christian+church+santee',
-    13: 'christian+church+poway',
-    14: 'christian+church+imperial+beach',
-    15: 'christian+church+coronado',
-    16: 'christian+church+solana+beach',
-    17: 'christian+church+lemon+grove',
-    18: 'christian+church+fallbrook',
-    19: 'christian+church+ramona',
-    20: 'christian+church+bonita',
-    21: 'christian+church+spring+valley',
-    22: 'christian+church+alpine',
-    23: 'christian+church+del+mar',
-    24: 'christian+church+cardiff+by+the+sea',
-    25: 'christian+church+rancho+bernardo',
-    26: 'christian+church+rancho+penasquitos',
-    27: 'christian+church+point+loma',
-    28: 'christian+church+mission+valley',
-    29: 'christian+church+university+city',
-    30: 'christian+church+hillcrest',
+    0: 'pool+spa+parts+manufacturer+los+angeles',
+    1: 'pool+spa+parts+manufacturer+san+francisco',
+    2: 'pool+spa+parts+manufacturer+san+diego',
+    3: 'pool+spa+parts+manufacturer+seattle',
+    4: 'pool+spa+parts+manufacturer+portland',
+    5: 'pool+spa+parts+manufacturer+phoenix',
+    6: 'pool+spa+parts+manufacturer+las+vegas',
+    7: 'pool+spa+parts+manufacturer+denver',
+    8: 'pool+spa+parts+manufacturer+salt+lake+city',
+    9: 'pool+spa+parts+manufacturer+boise',
+    10: 'pool+spa+parts+manufacturer+albuquerque',
+    11: 'pool+spa+parts+manufacturer+honolulu',
+    12: 'pool+spa+parts+manufacturer+anchorage',
+    13: 'pool+spa+parts+manufacturer+spokane',
+    14: 'pool+spa+parts+manufacturer+tucson',
+    15: 'pool+spa+parts+manufacturer+reno',
+    16: 'pool+spa+parts+manufacturer+colorado+springs',
+    17: 'pool+spa+parts+manufacturer+mesa',
+    18: 'pool+spa+parts+manufacturer+chandler',
+    19: 'pool+spa+parts+manufacturer+scottsdale',
+    20: 'pool+spa+parts+manufacturer+glendale+az',
+    21: 'pool+spa+parts+manufacturer+billings',
+    22: 'pool+spa+parts+manufacturer+cheyenne',
+    23: 'pool+spa+parts+manufacturer+missoula',
+    24: 'pool+spa+parts+manufacturer+casper',
+    25: 'pool+spa+parts+manufacturer+gresham',
+    26: 'pool+spa+parts+manufacturer+vancouver+wa',
+    27: 'pool+spa+parts+manufacturer+provo',
+    28: 'pool+spa+parts+manufacturer+fort+collins',
+    29: 'pool+spa+parts+manufacturer+aurora+co'
 }
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -66,38 +65,47 @@ driver.set_page_load_timeout(15)
 SEEN_EMAILS_FILE = 'seen_emails.json'
 SEEN_LINKS_FILE = 'seen_links.json'
 
-class TimeoutException(Exception):
-    pass
+use_signal = os.name != 'nt' and platform.system() != 'Windows'
 
-def handler(signum, frame):
-    raise TimeoutException()
+if use_signal:
+    import signal
+    class TimeoutException(Exception):
+        pass
+    def handler(signum, frame):
+        raise TimeoutException()
+    signal.signal(signal.SIGALRM, handler)
+else:
+    class TimeoutException(Exception):
+        pass
 
-signal.signal(signal.SIGALRM, handler)
-
-def run_driver(link):
+def run_driver(link, rows):
 
     print(f"\nSEARCHING LINK: {link}")
     try:
-        signal.alarm(20)
+        if use_signal:      
+            signal.alarm(20)
         driver.execute_script("window.open(arguments[0]);", link)
         driver.switch_to.window(driver.window_handles[-1])
         if not wait_for_page_load(driver):
             assure_proper_close()
-            signal.alarm(0)
+            if use_signal:
+                signal.alarm(0)
             return None
-        result = scrape_emails(link, 'results.txt')
+        result = scrape_emails(link, rows)
         driver.close()
         driver.switch_to.window(main_window)
         return result
     except TimeoutException:
         print("Tab timed out, skipping.")
         assure_proper_close()
-        signal.alarm(0)
+        if use_signal:
+            signal.alarm(0)
         return None
     except Exception as e:
         print(f"Error during tab open/scrape: {e}")
         assure_proper_close()
-        signal.alarm(0)
+        if use_signal:
+            signal.alarm(0)
         return None
 
 def assure_proper_close():
@@ -146,37 +154,39 @@ def wait_for_page_load(driver, timeout=10):
         return False
     return True
 
-# Write Emails to txt file
-def write_emails_to_file(emails, filename):
+# Write Emails to Dataframe
+def write_emails_to_file(emails, link, rows):
     global email_added, email_skipped
     seen_emails = load_seen_emails()
     
-    with open(filename, 'a') as file:
-        for i, email in enumerate(emails):
-            if email not in seen_emails:
-                seen_emails.add(email)
-                if i == len(emails) - 1:
-                    file.write(email + ' ')
-                else:
-                    file.write(email + '\n')
-                email_added += 1
-            else:
-                email_skipped += 1
+    for email in emails:
+        if email not in seen_emails:
+            seen_emails.add(email)
+
+            row = {'email': email,
+                    'link': link}
+            rows.append(row)
+
+            email_added += 1
+        else:
+            email_skipped += 1
 
     save_seen_emails(seen_emails) 
 
-# Write phone numbers to text file
-def write_phones_to_file(phones, filename):
-    with open(filename, 'a') as file:
-        for phone in phones:
-            if phone not in seen_phones:
-                seen_phones.add(phone)
-                file.write(phone + ' ')
+    return rows
 
-# Add a comma
-def add_comma():
-    with open('results.txt', 'a') as file:
-        file.write(', ')
+# Write phone numbers to text file
+def write_phones_to_file(phones, link, rows):
+    for phone in phones:
+        if phone not in seen_phones:
+            seen_phones.add(phone)
+            row = {
+                'phone': phone,
+                'link': link
+            }
+            rows.append(row)
+    
+    return rows
 
 # Scan HTML for emails and return them as a set
 def find_emails(html):
@@ -200,27 +210,23 @@ def find_phone_numbers(html):
     return formatted_numbers
 
 # Drives scraping activities
-def scrape_emails(link, filename):
+def scrape_emails(link, rows):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     emails = find_emails(str(soup))
     phones = find_phone_numbers(str(soup))
     print(phones)
     if emails:
         print("New emails found:", emails)
-        write_emails_to_file(emails, 'results.txt')
-        add_comma()
+        rows = write_emails_to_file(emails, link, rows)
     else:
         print("No emails found on this page.")
-        return False
+        return None
     if phones:
         print("New phone numbers found:", phones)
-        write_phones_to_file(phones, 'results.txt')
-        add_comma()
+        rows = write_phones_to_file(phones, link, rows)
     else:
         print("No phone numbers found:")
-        write_phones_to_file('###-###-####', 'results.txt')
-        add_comma()
-    return True
+    return rows
 
 def get_filtered_links():
     soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -231,10 +237,11 @@ def get_filtered_links():
     filtered_links = {link for link in links if not any(domain in link for domain in unwanted_links)}
     return filtered_links
 
-# START HERE
+########################### START HERE #######################################
 seen_emails = set()
 seen_phones = set()
 seen_filtered_links = set()
+result = None
 
 try:
     search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
@@ -243,7 +250,16 @@ try:
     seen_filtered_links = load_seen_links()
 
     while True:
-        signal.alarm(0) 
+        if os.path.exists('results.csv'):
+            df = pd.read_csv('results.csv')
+            print(f"Loaded {len(df)} rows from results.csv")
+        else:
+            df = pd.DataFrame(columns=["email", "phone", "link"])
+            print("results.csv not found, starting with empty DataFrame.")
+        rows = []
+
+        if use_signal:
+            signal.alarm(0) 
         if os.path.exists('pause.flag'):
             print("Paused... Type 'rm pause.flag' in another terminal to resume.")
             while os.path.exists('pause.flag'):
@@ -265,33 +281,42 @@ try:
             if link not in seen_filtered_links:
 
                 modified_link = f"{link}/contact"
-                result = run_driver(modified_link)
-                if result == True:
+                result = run_driver(modified_link, rows)
+                if result is not None:
+                    rows = result
                     seen_filtered_links.add(link)
-                    continue
-            
-                modified_link = f"{link}/contact-us"
-                result = run_driver(modified_link)
-                if result == True:
-                    seen_filtered_links.add(link)
+                    result = None
                     continue
 
-                modified_link = link
-                result = run_driver(modified_link)
-                if result == True:
+            
+                modified_link = f"{link}/contact-us"
+                result = run_driver(modified_link, rows)
+                if result is not None:
+                    rows = result
                     seen_filtered_links.add(link)
+                    result = None
+                    continue
+
+
+                modified_link = link
+                result = run_driver(modified_link, rows)
+                if result is not None:
+                    rows = result
+                    seen_filtered_links.add(link)
+                    result = None
                     continue
 
                 seen_filtered_links.add(link)
-
-                # Avoid adding websites without email or phone
-                if result is None:
-                    continue
-
-                with open('results.txt', 'a') as file:
-                    file.write(link + '\n')
         
         save_seen_links(seen_filtered_links)
+        if rows:
+            new_df = pd.DataFrame(rows)
+            df = pd.concat([df, new_df], ignore_index=True)
+            df.to_csv('results.csv', index=False)
+            print(f"Saved {len(new_df)} new rows to results.csv.")
+        else:
+            print("No new rows to save this loop.")
+        rows = []
 
         try:
             more_results_button = WebDriverWait(driver, 10).until(
@@ -300,7 +325,8 @@ try:
             more_results_button.click()
         except:
             print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON!")
-            signal.alarm(0)
+            if use_signal:
+                signal.alarm(0)
             search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
             try:
                 driver.get(search_link)
