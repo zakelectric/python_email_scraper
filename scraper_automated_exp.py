@@ -9,7 +9,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import signal
 import pandas as pd
 
 chrome_options = webdriver.ChromeOptions()
@@ -67,24 +66,30 @@ driver.set_page_load_timeout(15)
 SEEN_EMAILS_FILE = 'seen_emails.json'
 SEEN_LINKS_FILE = 'seen_links.json'
 
-class TimeoutException(Exception):
-    pass
-
-def handler(signum, frame):
-    raise TimeoutException()
-
-signal.signal(signal.SIGALRM, handler)
+use_signal = os.name != 'nt' and platform.system() != 'Windows'
+if use_signal:
+    import signal
+    class TimeoutException(Exception):
+        pass
+    def handler(signum, frame):
+        raise TimeoutException()
+    signal.signal(signal.SIGALRM, handler)
+else:
+    class TimeoutException(Exception):
+        pass
 
 def run_driver(link, rows):
 
     print(f"\nSEARCHING LINK: {link}")
     try:
-        signal.alarm(20)
+        if use_signal:
+            signal.alarm(20)
         driver.execute_script("window.open(arguments[0]);", link)
         driver.switch_to.window(driver.window_handles[-1])
         if not wait_for_page_load(driver):
             assure_proper_close()
-            signal.alarm(0)
+            if use_signal:
+                signal.alarm(0)
             return None
         result = scrape_emails(link, rows)
         driver.close()
@@ -93,12 +98,14 @@ def run_driver(link, rows):
     except TimeoutException:
         print("Tab timed out, skipping.")
         assure_proper_close()
-        signal.alarm(0)
+        if use_signal:
+            signal.alarm(0)
         return None
     except Exception as e:
         print(f"Error during tab open/scrape: {e}")
         assure_proper_close()
-        signal.alarm(0)
+        if use_signal:
+            signal.alarm(0)
         return None
 
 def assure_proper_close():
@@ -262,7 +269,8 @@ try:
             print("results.csv not found, starting with empty DataFrame.")
         rows = []
 
-        signal.alarm(0) 
+        if use_signal:
+            signal.alarm(0) 
         if os.path.exists('pause.flag'):
             print("Paused... Type 'rm pause.flag' in another terminal to resume.")
             while os.path.exists('pause.flag'):
@@ -285,19 +293,19 @@ try:
 
                 modified_link = f"{link}/contact"
                 result = run_driver(modified_link, rows)
-                if result == True:
+                if result is not None:
                     seen_filtered_links.add(link)
                     continue
             
                 modified_link = f"{link}/contact-us"
                 result = run_driver(modified_link, rows)
-                if result == True:
+                if result is not None:
                     seen_filtered_links.add(link)
                     continue
 
                 modified_link = link
                 result = run_driver(modified_link, rows)
-                if result == True:
+                if result is not None:
                     seen_filtered_links.add(link)
                     continue
 
@@ -312,7 +320,8 @@ try:
             more_results_button.click()
         except:
             print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON!")
-            signal.alarm(0)
+            if use_signal:
+                signal.alarm(0)
             search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
             try:
                 driver.get(search_link)
