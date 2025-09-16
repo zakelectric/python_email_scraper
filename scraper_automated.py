@@ -28,37 +28,36 @@ y = 1 # Make sure to update this to 0 if starting from scratch. Used as Index of
 
 
 search_terms = {
-    0: 'christian+church+san+diego+county',
-    1: 'christian+church+san+diego',
-    2: 'christian+church+chula+vista',
-    3: 'christian+church+oceanside',
-    4: 'christian+church+escondido',
-    5: 'christian+church+carlsbad',
-    6: 'christian+church+el+cajon',
-    7: 'christian+church+vista',
-    8: 'christian+church+san+marcos',
-    9: 'christian+church+encinitas',
-    10: 'christian+church+national+city',
-    11: 'christian+church+la+mesa',
-    12: 'christian+church+santee',
-    13: 'christian+church+poway',
-    14: 'christian+church+imperial+beach',
-    15: 'christian+church+coronado',
-    16: 'christian+church+solana+beach',
-    17: 'christian+church+lemon+grove',
-    18: 'christian+church+fallbrook',
-    19: 'christian+church+ramona',
-    20: 'christian+church+bonita',
-    21: 'christian+church+spring+valley',
-    22: 'christian+church+alpine',
-    23: 'christian+church+del+mar',
-    24: 'christian+church+cardiff+by+the+sea',
-    25: 'christian+church+rancho+bernardo',
-    26: 'christian+church+rancho+penasquitos',
-    27: 'christian+church+point+loma',
-    28: 'christian+church+mission+valley',
-    29: 'christian+church+university+city',
-    30: 'christian+church+hillcrest',
+    0: 'pool+spa+parts+manufacturer+los+angeles',
+    1: 'pool+spa+parts+manufacturer+san+francisco',
+    2: 'pool+spa+parts+manufacturer+san+diego',
+    3: 'pool+spa+parts+manufacturer+seattle',
+    4: 'pool+spa+parts+manufacturer+portland',
+    5: 'pool+spa+parts+manufacturer+phoenix',
+    6: 'pool+spa+parts+manufacturer+las+vegas',
+    7: 'pool+spa+parts+manufacturer+denver',
+    8: 'pool+spa+parts+manufacturer+salt+lake+city',
+    9: 'pool+spa+parts+manufacturer+boise',
+    10: 'pool+spa+parts+manufacturer+albuquerque',
+    11: 'pool+spa+parts+manufacturer+honolulu',
+    12: 'pool+spa+parts+manufacturer+anchorage',
+    13: 'pool+spa+parts+manufacturer+spokane',
+    14: 'pool+spa+parts+manufacturer+tucson',
+    15: 'pool+spa+parts+manufacturer+reno',
+    16: 'pool+spa+parts+manufacturer+colorado+springs',
+    17: 'pool+spa+parts+manufacturer+mesa',
+    18: 'pool+spa+parts+manufacturer+chandler',
+    19: 'pool+spa+parts+manufacturer+scottsdale',
+    20: 'pool+spa+parts+manufacturer+glendale+az',
+    21: 'pool+spa+parts+manufacturer+billings',
+    22: 'pool+spa+parts+manufacturer+cheyenne',
+    23: 'pool+spa+parts+manufacturer+missoula',
+    24: 'pool+spa+parts+manufacturer+casper',
+    25: 'pool+spa+parts+manufacturer+gresham',
+    26: 'pool+spa+parts+manufacturer+vancouver+wa',
+    27: 'pool+spa+parts+manufacturer+provo',
+    28: 'pool+spa+parts+manufacturer+fort+collins',
+    29: 'pool+spa+parts+manufacturer+aurora+co'
 }
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -219,7 +218,6 @@ def scrape_emails(link, rows):
         rows = write_phones_to_file(phones, link, rows)
     else:
         print("No phone numbers found:")
-    print("rows in scrape emails:", rows)
     return rows
 
 def get_filtered_links():
@@ -231,7 +229,7 @@ def get_filtered_links():
     filtered_links = {link for link in links if not any(domain in link for domain in unwanted_links)}
     return filtered_links
 
-# START HERE
+########################### START HERE #######################################
 seen_emails = set()
 seen_phones = set()
 seen_filtered_links = set()
@@ -250,7 +248,6 @@ try:
             df = pd.DataFrame(columns=["email", "phone", "link"])
             print("results.csv not found, starting with empty DataFrame.")
         rows = []
-        print(df)
 
         signal.alarm(0) 
         if os.path.exists('pause.flag'):
