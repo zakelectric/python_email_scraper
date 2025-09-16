@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import signal
+import pandas as pd
 
 chrome_options = webdriver.ChromeOptions()
 #chrome_options.add_argument('--headless')
@@ -74,7 +75,7 @@ def handler(signum, frame):
 
 signal.signal(signal.SIGALRM, handler)
 
-def run_driver(link):
+def run_driver(link, rows):
 
     print(f"\nSEARCHING LINK: {link}")
     try:
@@ -85,7 +86,7 @@ def run_driver(link):
             assure_proper_close()
             signal.alarm(0)
             return None
-        result = scrape_emails(link, 'results.txt')
+        result = scrape_emails(link, rows)
         driver.close()
         driver.switch_to.window(main_window)
         return result
@@ -146,37 +147,39 @@ def wait_for_page_load(driver, timeout=10):
         return False
     return True
 
-# Write Emails to txt file
-def write_emails_to_file(emails, filename):
+# Write Emails to Dataframe
+def write_emails_to_file(emails, link, rows):
     global email_added, email_skipped
     seen_emails = load_seen_emails()
     
-    with open(filename, 'a') as file:
-        for i, email in enumerate(emails):
-            if email not in seen_emails:
-                seen_emails.add(email)
-                if i == len(emails) - 1:
-                    file.write(email + ' ')
-                else:
-                    file.write(email + '\n')
-                email_added += 1
-            else:
-                email_skipped += 1
+    for email in emails:
+        if email not in seen_emails:
+            seen_emails.add(email)
+
+            row = {'email': email,
+                    'link': link}
+            rows.append(row)
+
+            email_added += 1
+        else:
+            email_skipped += 1
 
     save_seen_emails(seen_emails) 
 
-# Write phone numbers to text file
-def write_phones_to_file(phones, filename):
-    with open(filename, 'a') as file:
-        for phone in phones:
-            if phone not in seen_phones:
-                seen_phones.add(phone)
-                file.write(phone + ' ')
+    return rows
 
-# Add a comma
-def add_comma():
-    with open('results.txt', 'a') as file:
-        file.write(', ')
+# Write phone numbers to text file
+def write_phones_to_file(phones, link, rows):
+    for phone in phones:
+        if phone not in seen_phones:
+            seen_phones.add(phone)
+            row = {
+                'phone': phone,
+                'link': link
+            }
+            rows.append(row)
+    
+    return rows
 
 # Scan HTML for emails and return them as a set
 def find_emails(html):
@@ -200,27 +203,24 @@ def find_phone_numbers(html):
     return formatted_numbers
 
 # Drives scraping activities
-def scrape_emails(link, filename):
+def scrape_emails(link, rows):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
     emails = find_emails(str(soup))
     phones = find_phone_numbers(str(soup))
     print(phones)
     if emails:
         print("New emails found:", emails)
-        write_emails_to_file(emails, 'results.txt')
-        add_comma()
+        rows = write_emails_to_file(emails, link, rows)
     else:
         print("No emails found on this page.")
-        return False
+        return rows
     if phones:
         print("New phone numbers found:", phones)
-        write_phones_to_file(phones, 'results.txt')
-        add_comma()
+        rows = write_phones_to_file(phones, link, rows)
     else:
         print("No phone numbers found:")
-        write_phones_to_file('###-###-####', 'results.txt')
-        add_comma()
-    return True
+    print("rows in scrape emails:", rows)
+    return rows
 
 def get_filtered_links():
     soup = BeautifulSoup(driver.page_source, 'html.parser')
@@ -243,6 +243,15 @@ try:
     seen_filtered_links = load_seen_links()
 
     while True:
+        if os.path.exists('results.csv'):
+            df = pd.read_csv('results.csv')
+            print(f"Loaded {len(df)} rows from results.csv")
+        else:
+            df = pd.DataFrame(columns=["email", "phone", "link"])
+            print("results.csv not found, starting with empty DataFrame.")
+        rows = []
+        print(df)
+
         signal.alarm(0) 
         if os.path.exists('pause.flag'):
             print("Paused... Type 'rm pause.flag' in another terminal to resume.")
@@ -265,33 +274,39 @@ try:
             if link not in seen_filtered_links:
 
                 modified_link = f"{link}/contact"
-                result = run_driver(modified_link)
-                if result == True:
-                    seen_filtered_links.add(link)
-                    continue
-            
-                modified_link = f"{link}/contact-us"
-                result = run_driver(modified_link)
-                if result == True:
+                result = run_driver(modified_link, rows)
+                if result is not None:
+                    rows = result
                     seen_filtered_links.add(link)
                     continue
 
+            
+                modified_link = f"{link}/contact-us"
+                result = run_driver(modified_link, rows)
+                if result is not None:
+                    rows = result
+                    seen_filtered_links.add(link)
+                    continue
+
+
                 modified_link = link
-                result = run_driver(modified_link)
-                if result == True:
+                result = run_driver(modified_link, rows)
+                if result is not None:
+                    rows = result
                     seen_filtered_links.add(link)
                     continue
 
                 seen_filtered_links.add(link)
-
-                # Avoid adding websites without email or phone
-                if result is None:
-                    continue
-
-                with open('results.txt', 'a') as file:
-                    file.write(link + '\n')
         
         save_seen_links(seen_filtered_links)
+        if rows:
+            new_df = pd.DataFrame(rows)
+            df = pd.concat([df, new_df], ignore_index=True)
+            df.to_csv('results.csv', index=False)
+            print(f"Saved {len(new_df)} new rows to results.csv.")
+        else:
+            print("No new rows to save this loop.")
+        rows = []
 
         try:
             more_results_button = WebDriverWait(driver, 10).until(
@@ -314,3 +329,12 @@ try:
 
 finally:
     driver.quit()
+
+
+
+for index, row_1 in filtered_df.iloc[idx_next:].iterrows():
+                team_compare = row_1['team']
+                sportsbook_compare = row_1['sportsbook']
+                if team_compare == team and sportsbook_compare == sportsbook:
+                    filtered_df.loc[idx, "matched_team"] = True
+                    filtered_df.loc[index, "matched_team"] = True
