@@ -52,8 +52,8 @@ for start in range(0, len(keys), batch_size):
 
     prompt = (
         "Here is a JSON object where each key is a number and each value is an email address.\n"
-        "Send back a list of keys for any values that are OBVIOUSLY NOT a pool or spa parts manufacturer.\n"
-        "ONly send back a value if you are 100% sure it is not a pool or spa parts manufacturer."
+        "Send back a list of keys for any values that are OBVIOUSLY NOT in industry, manufacturing, etc..\n"
+        "ONly send back a value if you are 100% sure it is not in industry, manufacturing, etc.."
         "Only send the numbers, no words or explanations.\n\n"
         f"{json.dumps(batch, indent=2)}"
     )

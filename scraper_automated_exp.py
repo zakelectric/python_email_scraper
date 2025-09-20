@@ -25,39 +25,63 @@ email_added = 0
 email_skipped = 0
 skipped_links = 0
 y = 1 # Make sure to update this to 0 if starting from scratch. Used as Index of search_terms
-
+s = 0 # Represents state
 
 search_terms = {
-    0: 'custom+"rubber"+parts+"manufacturer"+los+angeles',
-    1: 'custom+"rubber"+parts+"manufacturer"+san+francisco',
-    2: 'custom+"rubber"+parts+"manufacturer"+san+diego',
-    3: 'custom+"rubber"+parts+"manufacturer"+seattle',
-    4: 'custom+"rubber"+parts+"manufacturer"+portland',
-    5: 'custom+"rubber"+parts+"manufacturer"+phoenix',
-    6: 'custom+"rubber"+parts+"manufacturer"+las+vegas',
-    7: 'custom+"rubber"+parts+"manufacturer"+denver',
-    8: 'custom+"rubber"+parts+"manufacturer"+salt+lake+city',
-    9: 'custom+"rubber"+parts+"manufacturer"+boise',
-    10: 'custom+"rubber"+parts+"manufacturer"+albuquerque',
-    11: 'custom+"rubber"+parts+"manufacturer"+honolulu',
-    12: 'custom+"rubber"+parts+"manufacturer"+anchorage',
-    13: 'custom+"rubber"+parts+"manufacturer"+spokane',
-    14: 'custom+"rubber"+parts+"manufacturer"+tucson',
-    15: 'custom+"rubber"+parts+"manufacturer"+reno',
-    16: 'custom+"rubber"+parts+"manufacturer"+colorado+springs',
-    17: 'custom+"rubber"+parts+"manufacturer"+mesa',
-    18: 'custom+"rubber"+parts+"manufacturer"+chandler',
-    19: 'custom+"rubber"+parts+"manufacturer"+scottsdale',
-    20: 'custom+"rubber"+parts+"manufacturer"+glendale+az',
-    21: 'custom+"rubber"+parts+"manufacturer"+billings',
-    22: 'custom+"rubber"+parts+"manufacturer"+cheyenne',
-    23: 'custom+"rubber"+parts+"manufacturer"+missoula',
-    24: 'custom+"rubber"+parts+"manufacturer"+casper',
-    25: 'custom+"rubber"+parts+"manufacturer"+gresham',
-    26: 'custom+"rubber"+parts+"manufacturer"+vancouver+wa',
-    27: 'custom+"rubber"+parts+"manufacturer"+provo',
-    28: 'custom+"rubber"+parts+"manufacturer"+fort+collins',
-    29: 'custom+"rubber"+parts+"manufacturer"+aurora+co'
+    0: 'automotive+parts+"manufacturer"',
+}
+
+state = {
+    1: 'alabama',
+    2: 'alaska',
+    3: 'arizona',
+    4: 'arkansas',
+    5: 'california',
+    6: 'colorado',
+    7: 'connecticut',
+    8: 'delaware',
+    9: 'florida',
+    10: 'georgia',
+    11: 'hawaii',
+    12: 'idaho',
+    13: 'illinois',
+    14: 'indiana',
+    15: 'iowa',
+    16: 'kansas',
+    17: 'kentucky',
+    18: 'louisiana',
+    19: 'maine',
+    20: 'maryland',
+    21: 'massachusetts',
+    22: 'michigan',
+    23: 'minnesota',
+    24: 'mississippi',
+    25: 'missouri',
+    26: 'montana',
+    27: 'nebraska',
+    28: 'nevada',
+    29: 'new hampshire',
+    30: 'new jersey',
+    31: 'new mexico',
+    32: 'new york',
+    33: 'north carolina',
+    34: 'north dakota',
+    35: 'ohio',
+    36: 'oklahoma',
+    37: 'oregon',
+    38: 'pennsylvania',
+    39: 'rhode island',
+    40: 'south carolina',
+    41: 'south dakota',
+    42: 'tennessee',
+    43: 'texas',
+    44: 'utah',
+    45: 'vermont',
+    46: 'virginia',
+    47: 'washington',
+    48: 'west virginia',
+    49: 'wisconsin',
+    50: 'wyoming'
 }
 
 
@@ -247,8 +271,8 @@ seen_filtered_links = set()
 result = None
 
 try:
-    search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
-    y += 1
+    search_link = f"https://duckduckgo.com/?q={search_terms[y]}+{state[s]}&t=h_&ia=web"
+    s += 1
     driver.get(search_link)
     seen_filtered_links = load_seen_links()
 
@@ -270,7 +294,7 @@ try:
             print("Resuming...")
 
         print("\n----------------------------------------------------------------------------------------")
-        print(f"Emails added: {email_added} | Emails skipped: {email_skipped} | Search term: {search_terms[y]}")
+        print(f"Emails added: {email_added} | Emails skipped: {email_skipped} | S: {s} Y: {y}")
         print("----------------------------------------------------------------------------------------")
         filtered_links = get_filtered_links()
         main_window = driver.current_window_handle
@@ -330,7 +354,10 @@ try:
             print("FIRST ITERATION OR COULD NOT FIND MORE RESULTS BUTTON!")
             if use_signal:
                 signal.alarm(0)
-            search_link = f"https://duckduckgo.com/?q={search_terms[y]}&t=h_&ia=web"
+            search_link = f"https://duckduckgo.com/?q={search_terms[y]}+{state[s]}&t=h_&ia=web"
+            if s == len(state):
+                y += 1
+                s = 0
             try:
                 driver.get(search_link)
             except:
