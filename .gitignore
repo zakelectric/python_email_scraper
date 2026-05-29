@@ -1,0 +1,9 @@
+*.env
+*.csv
+*.json
+*.txt
+old
+laser
+churches
+running.flag
+scraper_state.json
