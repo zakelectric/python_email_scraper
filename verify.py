@@ -63,7 +63,24 @@ def get_mx(domain: str) -> list[str]:
     return hosts
 
 before = len(df)
-df = df[df['email'].apply(lambda e: bool(get_mx(e.split('@')[-1])))]
+mx_emails = df['email'].tolist()
+mx_valid: dict = {}
+mx_done = 0
+
+with ThreadPoolExecutor(max_workers=20) as executor:
+    mx_futures = {executor.submit(get_mx, e.split('@')[-1]): e for e in mx_emails}
+    for future in as_completed(mx_futures):
+        email = mx_futures[future]
+        try:
+            hosts = future.result()
+        except Exception:
+            hosts = []
+        mx_valid[email] = bool(hosts)
+        mx_done += 1
+        if mx_done % 25 == 0 or mx_done == len(mx_emails):
+            print(f"  {mx_done}/{len(mx_emails)} checked...")
+
+df = df[df['email'].map(mx_valid)]
 print(f"  Dropped {before - len(df)} domains with no MX records. {len(df)} remaining.")
 
 # ── 4. SMTP verification ─────────────────────────────────────────────────────
@@ -73,7 +90,7 @@ print("  If your ISP blocks port 25, most results will be 'unverifiable'.\n")
 
 catch_all_cache: dict = {}
 catch_all_lock = threading.Lock()
-TIMEOUT = 10
+TIMEOUT = 5
 FROM_ADDR = 'check@verify.local'
 
 def _rcpt_probe(mx: str, email: str) -> int:
@@ -114,22 +131,32 @@ def verify_email(email: str) -> str:
     domain = email.split('@')[-1]
     hosts = get_mx(domain)
     if not hosts:
-        return 'no_mx'
+        status = 'no_mx'
+        print(f"  {email:<45} no_mx", flush=True)
+        return status
+    print(f"  {email:<45} checking catch-all...", flush=True)
     if _is_catch_all(domain) is True:
+        print(f"  {email:<45} catch_all", flush=True)
         return 'catch_all'
+    print(f"  {email:<45} probing mailbox...", flush=True)
     for mx in hosts[:2]:
         try:
             code = _rcpt_probe(mx, email)
             if code == 250:
-                return 'valid'
+                status = 'valid'
             elif 500 <= code <= 559:
-                return 'invalid'
+                status = 'invalid'
             else:
-                return 'unverifiable'
-        except _SMTP_ERRORS:
+                status = f'unverifiable (code {code})'
+            print(f"  {email:<45} {status}", flush=True)
+            return status.split(' ')[0]
+        except _SMTP_ERRORS as e:
+            print(f"  {email:<45} smtp error: {type(e).__name__}", flush=True)
             continue
-        except Exception:
+        except Exception as e:
+            print(f"  {email:<45} error: {type(e).__name__}", flush=True)
             continue
+    print(f"  {email:<45} unverifiable", flush=True)
     return 'unverifiable'
 
 emails = df['email'].tolist()
@@ -144,10 +171,10 @@ with ThreadPoolExecutor(max_workers=10) as executor:
             status = future.result()
         except Exception:
             status = 'error'
+            print(f"  {email:<45} error", flush=True)
         smtp_results[email] = status
         completed += 1
-        if completed % 25 == 0 or completed == len(emails):
-            print(f"  {completed}/{len(emails)} checked...")
+    print(f"\n  Done. {completed} emails checked.")
 
 df['smtp_status'] = df['email'].map(smtp_results)
 
