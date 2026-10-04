@@ -151,10 +151,10 @@ def verify_email(email: str) -> str:
             print(f"  {email:<45} {status}", flush=True)
             return status.split(' ')[0]
         except _SMTP_ERRORS as e:
-            print(f"  {email:<45} smtp error: {type(e).__name__}", flush=True)
+            print(f"  {email:<45} smtp error: {type(e).__name__}: {e}", flush=True)
             continue
         except Exception as e:
-            print(f"  {email:<45} error: {type(e).__name__}", flush=True)
+            print(f"  {email:<45} error: {type(e).__name__}: {e}", flush=True)
             continue
     print(f"  {email:<45} unverifiable", flush=True)
     return 'unverifiable'

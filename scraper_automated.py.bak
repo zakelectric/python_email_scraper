@@ -19,16 +19,7 @@ chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
 LATAM_COUNTRY_CODES = r'52|57|55|54|56|51|58|593|591|595|598|507|506|502|504|503|505|53|509'
-unwanted_links = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune',
-                  'wikipedia', 'forbes', 'facebook.com', 'twitter.com', 'linkedin.com', 'instagram.com', 'youtube.com', 'pinterest.com', 'tiktok.com', 'vimeo.com', 'bbb.org']
-
-# Lawyer directories. Do not skip these — mine them for links to the firms' own sites.
-directory_domains = ['avvo.com', 'justia.com', 'findlaw.com', 'expertise.com', 'superlawyers.com', 'lawyers.com', 'martindale.com',
-                     'thumbtack.com', 'threebestrated.com', 'bestlawyers.com', 'lawinfo.com', 'nolo.com', 'legalmatch.com',
-                     'hg.org', 'finduslawyers.org', 'divorceclear.com', 'legalreach.com', 'lawyer.com', 'findafamilyattorney.com', 'lawyers.law.cornell.edu']
-
-# Keep the worst directories out of the search results themselves.
-SEARCH_EXCLUSIONS = "+-site:avvo.com+-site:justia.com+-site:findlaw.com+-site:expertise.com+-site:superlawyers.com+-site:lawyers.com+-site:yelp.com"
+unwanted_links = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune']
 unwanted_email = ['sentry', 'wix', 'godaddy']
 email_added = 0
 email_skipped = 0
@@ -107,12 +98,7 @@ def save_scraper_state(y, s, current_link):
     with open(STATE_FILE, "w") as f:
         json.dump({"y": y, "s": s, "current link": current_link}, f, indent=2)
 
-def heartbeat():
-    # Tell mother.py we are alive. Must run at least every 30 seconds or mother kills us.
-    open('running.flag', 'a').close()
-
 def run_driver(link, rows):
-    heartbeat()
     print(f"\nSEARCHING LINK: {link}")
     try:
         if use_signal:
@@ -264,46 +250,6 @@ def get_filtered_links():
             found_links.add(href)
     return found_links
 
-def is_directory(link):
-    return any(domain in link for domain in directory_domains)
-
-# Load a directory page and return the firm websites it links to, normalized to their homepages
-def harvest_directory_links(link):
-    heartbeat()
-    print(f"\nMINING DIRECTORY: {link}")
-    try:
-        if use_signal:
-            signal.alarm(20)
-        driver.get(link)
-        loaded = wait_for_page_load(driver)
-        if use_signal:
-            signal.alarm(0)
-        if not loaded:
-            return set()
-    except TimeoutException:
-        print("Directory page timed out, skipping.")
-        if use_signal:
-            signal.alarm(0)
-        return set()
-    except Exception as e:
-        print(f"Error loading directory page: {e}")
-        return set()
-
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
-    found = set()
-    directory_host = urlparse(link).netloc.replace('www.', '')
-    for a in soup.find_all('a', href=True):
-        href = a['href']
-        if not href.startswith('http'):
-            continue
-        host = urlparse(href).netloc
-        if not host or directory_host in host:
-            continue
-        if any(domain in href for domain in unwanted_links) or is_directory(href):
-            continue
-        found.add(f"{urlparse(href).scheme}://{host}")
-    return found
-
 ########################### START HERE #######################################
 seen_emails = load_seen_emails()
 seen_phones = set()
@@ -313,7 +259,7 @@ result = None
 try:
     seen_filtered_links = load_seen_links()
     y, s, current_link = load_scraper_state()
-    search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+california{SEARCH_EXCLUSIONS}&t=h_&ia=web"
+    search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+california&t=h_&ia=web"
     driver.get(search_link)
     search_tab = driver.current_window_handle
 
@@ -351,20 +297,7 @@ try:
         print(f"Emails added: {email_added} | Emails skipped: {email_skipped} | S: {s} Y: {y} Link: {search_link}")
         print("----------------------------------------------------------------------------------------")
         filtered_links = get_filtered_links()
-
-        # Mine directory results for firm websites, then drop the directories themselves
-        mined_links = set()
-        for link in filtered_links:
-            if is_directory(link) and link not in seen_filtered_links:
-                driver.switch_to.window(scrape_tab)
-                mined = harvest_directory_links(link)
-                new_links = {m for m in mined if m not in seen_filtered_links}
-                if new_links:
-                    print(f"Mined {len(new_links)} firm links from directory.")
-                mined_links |= new_links
-                seen_filtered_links.add(link)
-        filtered_links = {l for l in filtered_links if not is_directory(l)} | mined_links
-
+        
         print("\nLINKS TO SEARCH:")
         for link in filtered_links:
             if link not in seen_filtered_links:
@@ -475,7 +408,7 @@ try:
                     print("All search terms and cities done. Stopping.")
                     break
 
-            search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+california{SEARCH_EXCLUSIONS}&t=h_&ia=web"
+            search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+california&t=h_&ia=web"
             save_scraper_state(y, s, "")
 
             try:

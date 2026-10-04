@@ -13,10 +13,12 @@ def kill_all_scraper_processes():
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
 
+PYTHON = '/home/zach/Programs/venv/bin/python3'
+
 try:
-    proc = subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', 'python3 scraper_automated.py'])
+    proc = subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'{PYTHON} scraper_automated.py'])
 except FileNotFoundError:
-    proc = subprocess.Popen(['xterm', '-e', 'python3 scraper_automated.py'])
+    proc = subprocess.Popen(['xterm', '-e', f'{PYTHON} scraper_automated.py'])
 
 while True:
     time_now = time.localtime()
@@ -33,6 +35,6 @@ while True:
         kill_all_scraper_processes()
 
         try:
-            proc = subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', 'python3 scraper_automated.py'])
+            proc = subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'{PYTHON} scraper_automated.py'])
         except FileNotFoundError:
-            proc = subprocess.Popen(['xterm', '-e', 'python3 scraper_automated.py'])
+            proc = subprocess.Popen(['xterm', '-e', f'{PYTHON} scraper_automated.py'])
