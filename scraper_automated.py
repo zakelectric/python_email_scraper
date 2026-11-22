@@ -17,15 +17,23 @@ chrome_options = webdriver.ChromeOptions()
 #chrome_options.add_argument('--headless')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
+# No desktop session on the server (run over SSH / tmux): Chrome needs headless there
+if platform.system() == 'Linux' and not os.environ.get('DISPLAY'):
+    chrome_options.add_argument('--headless=new')
 
 LATAM_COUNTRY_CODES = r'52|57|55|54|56|51|58|593|591|595|598|507|506|502|504|503|505|53|509'
 unwanted_links = ['zillow', 'duck', 'w3', 'houzz', 'github', 'google', 'apple', 'nytimes', 'api.you', 'yelp', 'yahoo', 'reddit', 'uniontribune',
-                  'wikipedia', 'forbes', 'facebook.com', 'twitter.com', 'linkedin.com', 'instagram.com', 'youtube.com', 'pinterest.com', 'tiktok.com', 'vimeo.com', 'bbb.org']
+                  'wikipedia', 'forbes', 'facebook.com', 'twitter.com', 'linkedin.com', 'instagram.com', 'youtube.com', 'pinterest.com', 'tiktok.com', 'vimeo.com', 'bbb.org',
+                  # Mortgage: national banks, rate/news sites, regulators — no small-shop emails there
+                  'wellsfargo', 'chase.com', 'bankofamerica', 'usbank', 'citi.com', 'rocketmortgage', 'nerdwallet', 'bankrate', 'lendingtree',
+                  'investopedia', 'consumerfinance.gov', 'hud.gov', 'fanniemae', 'freddiemac', 'nmlsconsumeraccess', 'realtor.com', 'redfin']
 
 # Lawyer directories. Do not skip these — mine them for links to the firms' own sites.
 directory_domains = ['avvo.com', 'justia.com', 'findlaw.com', 'expertise.com', 'superlawyers.com', 'lawyers.com', 'martindale.com',
                      'thumbtack.com', 'threebestrated.com', 'bestlawyers.com', 'lawinfo.com', 'nolo.com', 'legalmatch.com',
-                     'hg.org', 'finduslawyers.org', 'divorceclear.com', 'legalreach.com', 'lawyer.com', 'findafamilyattorney.com', 'lawyers.law.cornell.edu']
+                     'hg.org', 'finduslawyers.org', 'divorceclear.com', 'legalreach.com', 'lawyer.com', 'findafamilyattorney.com', 'lawyers.law.cornell.edu',
+                     # Mortgage directories
+                     'yellowpages.com', 'experience.com', 'mortgagebrokersassociation.org']
 
 # Keep the worst directories out of the search results themselves.
 SEARCH_EXCLUSIONS = "+-site:avvo.com+-site:justia.com+-site:findlaw.com+-site:expertise.com+-site:superlawyers.com+-site:lawyers.com+-site:yelp.com"
@@ -43,8 +51,22 @@ with open('cities.json', 'r') as f:
 with open('search_terms.json', 'r') as f:
     search_terms = json.load(f)
 
+# Optional per-campaign settings, read from the working directory like the two files above.
+# Run a campaign from its own folder (campaigns/<name>/) so its state, seen lists and results stay separate.
+campaign = {}
+if os.path.exists('campaign.json'):
+    with open('campaign.json', 'r') as f:
+        campaign = json.load(f)
+REGION = campaign.get('region', 'california')
+MAX_PAGES_PER_LOCATION = campaign.get('max_pages', 10)
+# false = scrape only the page DuckDuckGo returned, no /contact, /about guesses
+CONTACT_PAGES = campaign.get('contact_pages', True)
+unwanted_links += campaign.get('skip_domains', [])
+directory_domains += campaign.get('directory_domains', [])
+
 def create_driver():
-    d = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    # Selenium Manager finds/downloads a matching Chrome + driver (no system Chrome on this box)
+    d = webdriver.Chrome(options=chrome_options)
     d.set_page_load_timeout(15)
     return d
 
@@ -313,7 +335,7 @@ result = None
 try:
     seen_filtered_links = load_seen_links()
     y, s, current_link = load_scraper_state()
-    search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+california{SEARCH_EXCLUSIONS}&t=h_&ia=web"
+    search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+{REGION}{SEARCH_EXCLUSIONS}&t=h_&ia=web"
     driver.get(search_link)
     search_tab = driver.current_window_handle
 
@@ -322,7 +344,6 @@ try:
     scrape_tab = driver.current_window_handle
     main_window = search_tab
 
-    MAX_PAGES_PER_LOCATION = 10
     page_count = 0
 
     while True:
@@ -377,62 +398,18 @@ try:
 
                 driver.switch_to.window(scrape_tab)
 
-                modified_link = f"{link}/contact"
-                result = run_driver(modified_link, rows)
-                if result == "Fail":
-                    seen_filtered_links.add(link)
-                    reopen_scrape_tab()
-                    continue
-                if result is not None:
-                    seen_filtered_links.add(link)
-                    result = None
-                    continue
-
-                modified_link = f"{link}/contact-us"
-                result = run_driver(modified_link, rows)
-                if result == "Fail":
-                    seen_filtered_links.add(link)
-                    reopen_scrape_tab()
-                    continue
-                if result is not None:
-                    seen_filtered_links.add(link)
-                    result = None
-                    continue
-
-                modified_link = f"{link}/about-us"
-                result = run_driver(modified_link, rows)
-                if result == "Fail":
-                    seen_filtered_links.add(link)
-                    reopen_scrape_tab()
-                    continue
-                if result is not None:
-                    rows.extend(result)
-                    seen_filtered_links.add(link)
-                    result = None
-                    continue
-
-                modified_link = f"{link}/about"
-                result = run_driver(modified_link, rows)
-                if result == "Fail":
-                    seen_filtered_links.add(link)
-                    reopen_scrape_tab()
-                    continue
-                if result is not None:
-                    rows.extend(result)
-                    seen_filtered_links.add(link)
-                    result = None
-                    continue
-
-                modified_link = link
-                result = run_driver(modified_link, rows)
-                if result == "Fail":
-                    seen_filtered_links.add(link)
-                    reopen_scrape_tab()
-                    continue
-                if result is not None:
-                    seen_filtered_links.add(link)
-                    result = None
-                    continue
+                if CONTACT_PAGES:
+                    pages = [f"{link}/contact", f"{link}/contact-us", f"{link}/about-us", f"{link}/about", link]
+                else:
+                    pages = [link]
+                for modified_link in pages:
+                    result = run_driver(modified_link, rows)
+                    if result == "Fail":
+                        reopen_scrape_tab()
+                        break
+                    if result is not None:
+                        break
+                result = None
 
                 seen_filtered_links.add(link)
         
@@ -475,7 +452,7 @@ try:
                     print("All search terms and cities done. Stopping.")
                     break
 
-            search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+california{SEARCH_EXCLUSIONS}&t=h_&ia=web"
+            search_link = f"https://duckduckgo.com/?q={search_terms[str(y)]}+{cities[str(s)]}+{REGION}{SEARCH_EXCLUSIONS}&t=h_&ia=web"
             save_scraper_state(y, s, "")
 
             try:
@@ -484,7 +461,7 @@ try:
             except:
                 print("Driver failed. Restarting...")
                 driver.quit()
-                create_driver()
+                driver = create_driver()
 
 finally:
     driver.quit()

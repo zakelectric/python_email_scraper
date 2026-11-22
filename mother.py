@@ -13,7 +13,7 @@ def kill_all_scraper_processes():
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
 
-PYTHON = '/home/zach/Programs/venv/bin/python3'
+PYTHON = '/home/web/Programs/venv/bin/python3'
 
 try:
     proc = subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'{PYTHON} scraper_automated.py'])
