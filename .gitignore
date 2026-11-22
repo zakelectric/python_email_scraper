@@ -10,3 +10,4 @@ scraper_state.json
 !clean_rules.json
 __pycache__/
 *.pyc
+*.jsonl
